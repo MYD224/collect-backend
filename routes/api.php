@@ -13,6 +13,6 @@ Route::get('/user', function (Request $request) {
 
 Route::post("/bookings", [BookingController::class, 'store']);
 
-Route::get("/tickets", fn() => "List of tickets updated 10.");
+Route::get("/tickets", fn() => "List of tickets updated 17.");
 
 Route::resource("posts", PostController::class);
