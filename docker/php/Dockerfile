@@ -17,6 +17,9 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
+# --- Add this line to tell Git to trust the mounted volume ---
+RUN git config --global --add safe.directory /var/www/html
+
 # Copy composer files first for caching
 COPY composer.json composer.lock ./
 
