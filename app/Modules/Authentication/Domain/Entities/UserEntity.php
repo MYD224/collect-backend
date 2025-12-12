@@ -86,6 +86,10 @@ class UserEntity
     }
 
 
+    
+
+
+
     public function getPhoneVerifiedAt() {
         return $this->phoneVerifiedAt;
     }
@@ -150,4 +154,24 @@ class UserEntity
     {
         return $this->updatedAt;
     }
+
+        /**
+         * Set the value of phoneVerifiedAt
+         *
+         * @return  self
+         */ 
+        public function setPhoneVerifiedAt($phoneVerifiedAt)
+        {
+            $this->phoneVerifiedAt = $phoneVerifiedAt;
+
+            return $this;
+        }
+
+        /**
+         * Get the value of phone
+         */ 
+        public function getPhone()
+        {
+            return $this->phone->value();
+        }
 }

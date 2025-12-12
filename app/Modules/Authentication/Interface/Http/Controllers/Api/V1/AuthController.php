@@ -2,19 +2,23 @@
 
 namespace App\Modules\Authentication\Interface\Http\Controllers\Api\V1;
 
+use App\Core\Application\UseCases\GenerateTokenUseCase;
 use App\Core\Interface\Controllers\BaseController;
+// use App\Modules\Authentication\Application\Services\UserService;
 use App\Modules\Authentication\Application\Services\UserService;
 use App\Modules\Authentication\Application\V1\Commands\GenerateOtpCommand;
 use App\Modules\Authentication\Application\V1\Commands\LogoutCommand;
 use App\Modules\Authentication\Application\V1\Commands\RegisterUserCommand;
 use App\Modules\Authentication\Application\V1\Commands\UpdateUserProfileCommand;
 use App\Modules\Authentication\Application\V1\Commands\VerifyOtpCommand;
+use App\Modules\Authentication\Application\V1\Data\UserData;
 use App\Modules\Authentication\Application\V1\Handlers\GenerateOtpHandler;
 use App\Modules\Authentication\Application\V1\UseCases\GenerateOtpUseCase;
 use App\Modules\Authentication\Application\V1\UseCases\LogoutUseCase;
 use App\Modules\Authentication\Application\V1\UseCases\RegisterUserUseCase;
 use App\Modules\Authentication\Application\V1\UseCases\UpdateUserProfileUseCase;
 use App\Modules\Authentication\Application\V1\UseCases\VerifyOtpUseCase;
+use App\Modules\Authentication\Domain\Repositories\UserRepositoryInterface;
 use App\Modules\Authentication\Infrastructure\Persistence\Eloquent\Models\User;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
@@ -22,7 +26,7 @@ use Illuminate\Http\Request;
 
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-
+use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Facades\Validator;
 
 
@@ -31,8 +35,9 @@ class AuthController extends BaseController
 {
 
 
-    public function login(Request $request, UserService $userService)
+    public function login(Request $request, UserRepositoryInterface $userRepository)
     {
+
         $validator = Validator::make($request->all(), [
             'phone'    => 'required|string',
         ]);
@@ -42,23 +47,28 @@ class AuthController extends BaseController
         }
 
 
-        $userData = $userService->findByPhone($request->phone);
+        $userEntity = $userRepository->findByPhone($request->phone);
 
-        if (!$userData) {
+        if (!$userEntity) {
             return response()->json(['message' => 'User not found.'], 404);
         }
 
-        if (!$userData->phoneVerifiedAt) {
+        if (!$userEntity->getPhoneVerifiedAt()) {
             return response()->json(['message' => 'Please verify your phone first.'], 403);
         }
 
+         // Check user status
+        // if ($userEntity->getStatus() !== UserStatus::ACTIVE) {
+        //     throw new InvalidStatusException("User account is not active.");
+        // }
+
         // Revoke old tokens (optional, to ensure one active session)
-        $userService->deleteTokens($userData->phone);
+        $userRepository->deleteTokens($userEntity->getPhone());
 
         // Generate OTP
         // $otp = rand(100000, 999999);
         $otp = app(GenerateOtpHandler::class)->handle(
-            new GenerateOtpCommand($userData->id)
+            new GenerateOtpCommand($userEntity->getId())
         );
         // $user->update([
         //     "otp_code" => $result['otp'],
@@ -76,16 +86,16 @@ class AuthController extends BaseController
 
         return response()->json([
             'message' => 'Account created successfully. Please verify your phone.',
-            'user' => $userData,
+            'user' => UserData::fromEntity($userEntity),
             'opt' => $otp,
         ]);
     }
 
     public function register(
         Request $request,
-        RegisterUserUseCase $useCase,
-        UpdateUserProfileUseCase $updateProfileUseCase,
+        RegisterUserUseCase $registerUserUseCase,
     ) {
+
 
         try {
 
@@ -106,32 +116,27 @@ class AuthController extends BaseController
                 password: $request->password
             );
 
-            $userData = $useCase->execute($command);
+
+            $userEntity = $registerUserUseCase->execute($command);
 
             // Generate OTP
             $otp = app(GenerateOtpUseCase::class)->execute(
-                new GenerateOtpCommand($userData->id)
+                new GenerateOtpCommand($userEntity->getId(), 30000)
             );
 
-            $updateCommande = new UpdateUserProfileCommand(
-                id: $userData->id,
-                otpCode: (string) $otp['otp'],
-                otpExpiresAt: CarbonImmutable::now()->addMinutes($otp['ttl'])
-            );
 
-            $userData = $updateProfileUseCase->execute($updateCommande);
 
 
             // Send via SMS gateway (or fake for dev)
             // SmsService::send($request->phone, "Your OTP is: {$otp}");
             // TODO: send OTP via SMS or WhatsApp (for now just log it)
-            info("OTP for {$userData->phone}: {$otp['otp']}");
-
+            info("OTP for {$userEntity->getPhone()}: {$otp['otp']}");
+           
 
 
             return response()->json([
                 'message' => 'Account created',
-                'user' => $userData
+                'user' => UserData::fromEntity($userEntity),
             ]);
         } catch (\Throwable $th) {
            return response()->json(["message" => $th->getMessage()], 400);
@@ -165,7 +170,7 @@ class AuthController extends BaseController
 
 
 
-    public function verifyPhone(UserService $userService, UpdateUserProfileUseCase $updateProfileUseCase)
+    public function verifyPhone(UpdateUserProfileUseCase $updateProfileUseCase, GenerateTokenUseCase $generateTokenUseCase)
     {
         $validated = request()->validate([
             'user_id' => 'required|string',
@@ -190,12 +195,10 @@ class AuthController extends BaseController
                 id: $result ['user_id'],
                 phoneVerifiedAt: CarbonImmutable::now(),
                 otpCode: null,
-                otpExpiresAt: null
             );
 
             $userData = $updateProfileUseCase->execute($updateCommande);
-
-            $token = $userService->generatPassportToken($validated['user_id']); //
+            $token = $generateTokenUseCase->execute($validated['user_id']); //
 
             return response()->json([
                 'token_type' => 'Bearer',

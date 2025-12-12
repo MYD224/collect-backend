@@ -13,11 +13,11 @@ use phpDocumentor\Reflection\Types\This;
 
 class EloquentUserRepository implements UserRepositoryInterface
 {
-    public function save(UserEntity $user): void
+    public function save(UserEntity $user): UserEntity
     {
 
 
-        ModelsUser::updateOrCreate(
+        $user = ModelsUser::updateOrCreate(
             ['id' => $user->getId()],
             [
                 'email' => $user->getEmail(),
@@ -26,9 +26,12 @@ class EloquentUserRepository implements UserRepositoryInterface
                 'status' => $user->getStatus(),
                 'otp_code' => $user->getOtpCode(),
                 'otp_expires_at' => $user->getOtpExpiresAt(),
+                'phone_verified_at' => $user->getPhoneVerifiedAt(),
                 'password' => $user->getHashedPassword(),
             ]
         );
+
+        return $this->userInstance($user);
     }
 
     public function generatPassportToken(string $id): string {

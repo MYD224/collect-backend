@@ -1,7 +1,7 @@
 <?php
 namespace App\Modules\Authentication\Application\V1\Handlers;
 
-
+use App\Core\Contracts\Cache\CacheServiceInterface;
 use App\Modules\Authentication\Application\Commands\VerifyOtpCommand;
 use App\Core\Contracts\Security\OtpServiceInterface;
 use App\Modules\Authentication\Domain\Exceptions\InvalidOtpException;
@@ -9,22 +9,27 @@ use App\Modules\Authentication\Application\Services\UserService;
 use App\Modules\Authentication\Application\V1\Commands\VerifyOtpCommand as CommandsVerifyOtpCommand;
 use App\Modules\Authentication\Domain\Enums\UserStatus;
 use App\Modules\Authentication\Domain\Exceptions\OtpExpiredException;
+use App\Modules\Authentication\Domain\Repositories\UserRepositoryInterface;
+use App\Modules\User\Domain\Exceptions\InvalidStatusException;
 use App\Modules\User\Domain\Exceptions\UserNotFoundException as ExceptionsUserNotFoundException;
 
 final class VerifyOtpHandler
 {
     public function __construct(
-        private readonly UserService $userService,
+        private readonly UserRepositoryInterface $userRepository,
         private readonly OtpServiceInterface $otpService,
+        private readonly CacheServiceInterface $cacheService,
         // private readonly EventDispatcherInterface $events
     ) {}
+    
 
     public function handle(CommandsVerifyOtpCommand $command): array
     {
-        // 1. Load user from domain repo
-        $userData = $this->userService->findById($command->userId);
+        
+        
+        $userEntity = $this->userRepository->findById($command->userId);
 
-        if (!$userData) {
+        if (!$userEntity) {
             throw new ExceptionsUserNotFoundException("User ID {$command->userId} not found.");
         }
 
@@ -33,7 +38,7 @@ final class VerifyOtpHandler
 
         try {
             $isValid = $this->otpService->validate(
-                key: "user:{$userData->id}",
+                key: "user:{$userEntity->getId()}",
                 code: $command->otp
             );
         } catch (OtpExpiredException $e) {
@@ -42,11 +47,6 @@ final class VerifyOtpHandler
 
         if (!$isValid) {
             throw new InvalidOtpException();
-        }
-
-        // 3. OPTIONAL: Activate user or update status
-        if ($userData->status !== UserStatus::ACTIVE) {
-            $this->userService->save($userEntity);    // Persist through repo
         }
 
         // 4. Fire event

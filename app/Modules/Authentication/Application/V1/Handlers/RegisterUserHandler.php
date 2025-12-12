@@ -18,14 +18,16 @@ class RegisterUserHandler
     {
 
         
-        $userData = $this->userService->createUser(
-            fullname: $command->fullname,
-            email: $command->email,
-            phone: $command->phone,
-            password: $command->password,
-        );
 
-        return $userData;
+        
+        // $userData = $this->userService->createUser(
+        //     fullname: $command->fullname,
+        //     email: $command->email,
+        //     phone: $command->phone,
+        //     password: $command->password,
+        // );
+
+        // return $userData;
        
     }
    

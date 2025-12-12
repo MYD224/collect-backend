@@ -6,6 +6,7 @@ use App\Core\Contracts\Cache\CacheServiceInterface;
 use App\Core\Contracts\Security\OtpServiceInterface;
 use App\Core\Infrastructure\Cache\LaravelCacheService;
 use App\Core\Infrastructure\Cache\RedisCacheService;
+use App\Core\Infrastructure\Security\OtpService;
 use App\Core\Infrastructure\Security\RedisOtpService;
 use App\Infrastructure\Providers\BookingServiceProvider;
 use App\Modules\Authentication\Domain\Repositories\UserRepositoryInterface;
@@ -19,7 +20,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $myapp = "beetrans";
+        $myapp = "kollect";
 
         $this->app->bind(CacheServiceInterface::class, LaravelCacheService::class);
 
@@ -30,7 +31,9 @@ class AppServiceProvider extends ServiceProvider
         });
 
         $this->app->bind(OtpServiceInterface::class, function (){
-            return new RedisOtpService(prefix: "otp:");
+            return new OtpService(
+                $this->app->make(CacheServiceInterface::class)
+            );
     });
     }
 

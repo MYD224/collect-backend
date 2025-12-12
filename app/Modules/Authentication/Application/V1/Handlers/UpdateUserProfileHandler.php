@@ -6,18 +6,23 @@ use App\Modules\Authentication\Application\V1\Commands\UpdateUserProfileCommand;
 use App\Modules\Authentication\Infrastructure\Persistence\Eloquent\Models\User;
 use App\Modules\Authentication\Application\V1\Data\UserData;
 use App\Modules\Authentication\Application\Services\UserService;
+use App\Modules\Authentication\Domain\Entities\UserEntity;
 
 class UpdateUserProfileHandler
 {
     
     public function __construct(
+        private UserEntity $userEntity,
         private UserService $userService,
     ){}
 
 
-    public function handle(UpdateUserProfileCommand $command): UserData
+    public function handle(UpdateUserProfileCommand $command)
     {
 
+        info("UpdateUserProfileHandler called");
+        info($this->userEntity);
+        return;
         
         $userData = $this->userService->update(
             id: $command->id,

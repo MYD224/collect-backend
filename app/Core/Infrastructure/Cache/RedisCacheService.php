@@ -19,7 +19,7 @@ class RedisCacheService implements CacheServiceInterface
      */
     private function key(string $key): string
     {
-        return $this->prefix . $key;
+        return $this->prefix . $key;  //otp:user:iièddè-sfdjs-fjsdjf-sdfjsd
     }
 
     public function get(string $key, mixed $default = null): mixed
