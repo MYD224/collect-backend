@@ -8,8 +8,8 @@ RUN apt-get update && apt-get install -y \
     libssl-dev zlib1g-dev libcurl4-openssl-dev \
     nodejs npm \
     && docker-php-ext-install pdo_mysql mbstring zip exif pcntl bcmath gd intl xml dom \
-    && pecl install redis swoole \
-    && docker-php-ext-enable redis swoole \
+    && pecl install redis \
+    && docker-php-ext-enable redis \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Install Composer
@@ -33,4 +33,5 @@ RUN npm install -g chokidar-cli
 EXPOSE 8000
 
 # Start Laravel Octane with Swoole
-CMD ["php", "artisan", "octane:start", "--server=swoole", "--host=0.0.0.0", "--port=8000", "--watch"]
+#CMD ["php", "artisan", "octane:start", "--server=swoole", "--host=0.0.0.0", "--port=8000", "--watch"]
+CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
