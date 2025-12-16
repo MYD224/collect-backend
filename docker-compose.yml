@@ -8,7 +8,11 @@ services:
     working_dir: /var/www/html
     volumes:
       - .:/var/www/html
-      - /var/www/html/vendor    # <-- protège vendor
+      - vendor:/var/www/html/vendor
+      - composer_cache:/tmp/composer
+    environment:
+      COMPOSER_HOME: /tmp/composer
+      COMPOSER_CACHE_DIR: /tmp/composer/cache
     ports:
       - "8000:8000"
     depends_on:
@@ -39,3 +43,5 @@ volumes:
   redisdata:
     driver: local
   dbdata:
+  vendor:
+  composer_cache:

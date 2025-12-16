@@ -21,13 +21,16 @@ class EloquentUserRepository implements UserRepositoryInterface
             ['id' => $user->getId()],
             [
                 'email' => $user->getEmail(),
-                'phone' => $user->getPhoneNumber(),
+                'phone' => $user->getPhoneNumber() ? $user->getPhoneNumber() : null,
                 'fullname' => $user->getFullname(),
                 'status' => $user->getStatus(),
                 'otp_code' => $user->getOtpCode(),
                 'otp_expires_at' => $user->getOtpExpiresAt(),
                 'phone_verified_at' => $user->getPhoneVerifiedAt(),
+                'email_verified_at' => $user->getEmailVerifiedAt(),
                 'password' => $user->getHashedPassword(),
+                'auth_provider' => $user->getAuthProvider(),
+                'provider_id' => $user->getAuthProviderId(),
             ]
         );
 
