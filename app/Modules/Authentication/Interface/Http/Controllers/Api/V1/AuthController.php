@@ -4,6 +4,7 @@ namespace App\Modules\Authentication\Interface\Http\Controllers\Api\V1;
 
 use App\Core\Application\UseCases\GenerateTokenUseCase;
 use App\Core\Interface\Controllers\BaseController;
+use App\Modules\Authentication\Application\Services\HashingService;
 // use App\Modules\Authentication\Application\Services\UserService;
 use App\Modules\Authentication\Application\Services\UserService;
 use App\Modules\Authentication\Application\V1\Commands\GenerateOtpCommand;
@@ -23,6 +24,11 @@ use App\Modules\Authentication\Infrastructure\Persistence\Eloquent\Models\User;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+use Laravel\Socialite\Facades\Socialite;
+use App\Modules\Authentication\Domain\ValueObjects\Email;
+use App\Modules\Authentication\Domain\ValueObjects\Id;
+
 
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -33,6 +39,8 @@ use Illuminate\Support\Facades\Validator;
 
 class AuthController extends BaseController
 {
+    public function __construct(private readonly UserRepositoryInterface $userRepository, private readonly HashingService $hashingService)
+    {}
 
 
     public function login(Request $request, UserRepositoryInterface $userRepository)
@@ -194,7 +202,6 @@ class AuthController extends BaseController
              $updateCommande = new UpdateUserProfileCommand(
                 id: $result ['user_id'],
                 phoneVerifiedAt: CarbonImmutable::now(),
-                otpCode: null,
             );
 
             $userData = $updateProfileUseCase->execute($updateCommande);
@@ -231,5 +238,106 @@ class AuthController extends BaseController
         return response()->json([
             'message' => 'Logged out from all devices'
         ]);
+    }
+
+
+    /**
+     * Rediriger vers le provider OAuth
+     */
+    public function redirect($provider)
+    {
+        $this->validateProvider($provider);
+
+        return Socialite::driver($provider)
+            ->stateless()
+            ->redirect();
+    }
+
+    /**
+     * Gérer le callback du provider OAuth
+     */
+    public function callback($provider)
+    {
+        $this->validateProvider($provider);
+
+        try {
+            // Récupérer les informations de l'utilisateur depuis le provider
+            $socialUser = Socialite::driver($provider)->stateless()->user();
+            // Trouver ou créer l'utilisateur
+            $user = $this->findOrCreateUser($socialUser, $provider);
+
+            // Créer un token Passport
+            $token = $this->userRepository->generatPassportToken($user->getId());
+            $id = $user->getId();
+            $name = $user->getFullname();
+            $email = $user->getEmail();
+            info(config('app.frontend_url'));
+            // Rediriger vers le frontend avec le token
+            $redirectUrl = sprintf(
+                '%s/auth/callback?token=%s&user=%s',
+                config('app.frontend_url'),
+                $token,
+                urlencode(json_encode([
+                    'id' => $id,
+                    'name' => $name,
+                    'email' => $email,
+                    // 'user' => $user,
+                    // 'avatar' => $user->avatar,
+                ]))
+            );
+            info($redirectUrl);
+
+            return redirect()->away($redirectUrl);
+
+        } catch (\Exception $e) {
+            // En cas d'erreur, rediriger vers le frontend avec l'erreur
+            $errorUrl = sprintf(
+                '%s/auth/callback?error=%s',
+                config('app.frontend_url'),
+                urlencode('Échec de l\'authentification')
+            );
+
+            return redirect()->away($errorUrl);
+        }
+    }
+
+    /**
+     * Trouver ou créer un utilisateur basé sur les infos du provider
+     */
+    protected function findOrCreateUser($socialUser, $provider)
+    {
+        // Chercher un utilisateur avec ce provider et provider_id
+        $user = $this->userRepository->findByAuthProviderAndProviderId($provider, $socialUser->getId());
+
+        if ($user) {
+            return $user;
+        }
+        $email = new Email($socialUser->getEmail());
+        // Vérifier si un utilisateur existe avec cet email
+        $existingUser = $this->userRepository->findByEmail($email->value());
+        if ($existingUser) {
+            // Lier le compte existant au provider social
+            $user = $this->userRepository->updateUserAfterSocialRegistration(
+                $existingUser->getId(), $provider, $socialUser->getId(), $existingUser->getEmail(), $existingUser->getFullname(), $existingUser->getHashedPassword(), now()
+            );
+
+            return $user;
+        }
+        $hashedPassword = $this->hashingService->hash(Str::random(24));
+        // Créer un nouvel utilisateur
+        $user = $this->userRepository->updateUserAfterSocialRegistration(
+                Id::generate()->value(), $provider, $socialUser->getId(), $socialUser->getEmail(), $socialUser->getName(), $hashedPassword, now() 
+            );
+        return $user;
+    }
+
+    /**
+     * Valider le provider
+     */
+    protected function validateProvider($provider)
+    {
+        if (!in_array($provider, ['google', 'facebook'])) {
+            abort(404);
+        }
     }
 }

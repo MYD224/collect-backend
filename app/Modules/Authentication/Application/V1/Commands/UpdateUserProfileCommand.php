@@ -16,7 +16,6 @@ class UpdateUserProfileCommand {
         public ?string $phoneVerifiedAt = null,
         public ?string $password = null,  
         public ?string $status = null,
-        public ?int $otpCode = null, 
         public ?CarbonImmutable $otpExpiresAt = null    
     ){}
 }

@@ -15,14 +15,13 @@ class UserEntity
         private Id $id,
         private Email $email,
         private string $fullname,
-        private PhoneNumber $phone,
+        private ?PhoneNumber $phone,
         private string $hashedPassword,
         private UserStatus | string $status = UserStatus::ACTIVE->value,
         private ?CarbonImmutable $phoneVerifiedAt = null,
         private ?CarbonImmutable $emailVerifiedAt = null,
         private ?string $authProvider = null,
         private ?string $authProviderId = null,
-        private ?int $otpCode = null,
         private ?CarbonImmutable $otpExpiresAt = null,
         private CarbonImmutable $createdAt = new CarbonImmutable(),
         private CarbonImmutable $updatedAt = new CarbonImmutable(),
@@ -30,7 +29,7 @@ class UserEntity
 
 
     public static function register(
-        Id $id, string $fullname,  PhoneNumber | null $phone, CarbonImmutable | null $phoneVerifiedAt ,Email $email, string|UserStatus $status, string $hashedPassword,
+        Id $id, string $fullname,   CarbonImmutable | null $phoneVerifiedAt, Email $email, string|UserStatus $status, string $hashedPassword, ?PhoneNumber $phone = null,
         ?CarbonImmutable $emailVerifiedAt = null, ?string $authProvider = null, ?string $authProviderId = null
     ): self
     {
@@ -49,10 +48,11 @@ class UserEntity
         ?PhoneNumber $phone = null,
         ?UserStatus $status = null,
         ?string $hashedPassword = null,
-        ?int $otpCode = null,
         ?CarbonImmutable $otpExpiresAt = null,
         ?CarbonImmutable $phoneVerifiedAt = null,
         ?CarbonImmutable $emailVerifiedAt = null,
+        ?string $authProvider = null,
+        ?string $authProviderId = null,
 
     ): void {
 
@@ -78,10 +78,6 @@ class UserEntity
             $this->hashedPassword = $hashedPassword;
         }
 
-        if ($otpCode !== null) {
-            $this->otpCode = $otpCode;
-        }
-
         if ($otpExpiresAt !== null) {
             $this->otpExpiresAt = $otpExpiresAt;
         }
@@ -91,6 +87,12 @@ class UserEntity
         }
         if ($emailVerifiedAt !== null) {
             $this->emailVerifiedAt = $emailVerifiedAt;
+        }
+        if($authProvider !== null){
+            $this->authProvider = $authProvider;
+        }
+        if($authProviderId !== null){
+            $this->authProviderId = $authProviderId;
         }
 
         $this->touchUpdatedAt();
@@ -126,7 +128,7 @@ class UserEntity
         return $this->email->value();
     }
 
-    public function getPhoneNumber(): string
+    public function getPhoneNumber(): ?string
     {
         return $this->phone->value();
     }
@@ -141,10 +143,6 @@ class UserEntity
         return $this->hashedPassword;
     }
 
-    public function getOtpCode()
-    {
-        return $this->otpCode;
-    }
 
     public function getOtpExpiresAt()
     {
@@ -183,7 +181,7 @@ class UserEntity
          */ 
         public function getPhone()
         {
-            return $this->phone->value();
+            return $this->phone->value() ? $this->phone->value() : null;
         }
 
         /**

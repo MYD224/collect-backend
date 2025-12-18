@@ -38,9 +38,7 @@ class UpdateUserProfileUseCase
             
 
             // Préparer les nouvelles valeurs
-            // $hashedPassword = $password ? $this->hashingService->hash($password) : null;
             $phoneVerifiedAt = CarbonImmutable::parse($command->phoneVerifiedAt);
-            $otpExpiresAt = CarbonImmutable::parse($command->otpExpiresAt);
 
             $status = $userEntity->getStatus();
 
@@ -48,7 +46,6 @@ class UpdateUserProfileUseCase
             $userEntity->update(
                 status: $status,
                 phoneVerifiedAt: $phoneVerifiedAt,
-                otpCode: $command->otpCode,
             );
 
             // Persister les modifications

@@ -4,6 +4,7 @@ namespace App\Modules\Authentication\Domain\Repositories;
 
 use App\Modules\Authentication\Application\V1\Data\UserData;
 use App\Modules\Authentication\Domain\Entities\UserEntity;
+use Carbon\CarbonImmutable;
 
 interface UserRepositoryInterface
 {
@@ -12,4 +13,10 @@ interface UserRepositoryInterface
     public function deleteTokens(string $phone);
     public function generatPassportToken(string $id): string;
     public function findByPhone(string $phone): ?UserEntity;
+    public function findByEmail(string $email): ?UserEntity;
+    public function findByAuthProviderAndProviderId(string $authProvider, string $providerId): ?UserEntity;
+    public function updateUserAfterSocialRegistration(
+        string $id, string $authProvider, string $providerId, string $email, string $fullname, 
+        ?string $password, ?string $emailValidatedAt = null
+    ): UserEntity;
 }
