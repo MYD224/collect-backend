@@ -5,17 +5,15 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Structure extends Model
+class UserStructure extends Model
 {
     use SoftDeletes;
+    protected $fillable = [
+        'user_id',
+        'structure_id',
+        'created_by_id',
+        'last_updated_by_id'
+    ];
 
     public $incrementing = false;
-
-    protected $fillable = [
-        'id',
-        'name',
-        'created_by_id',
-        'last_updated_by_id',
-        'is_owner'
-    ];
 }

@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('structure_menu_overides', function (Blueprint $table) {
+        Schema::create('structure_menu_overrides', function (Blueprint $table) {
             $table->uuid('id')->primary();
 
             $table->uuid('structure_id');

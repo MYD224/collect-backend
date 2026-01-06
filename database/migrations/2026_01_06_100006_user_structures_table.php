@@ -11,16 +11,19 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('structures', function (Blueprint $table) {
+        Schema::create('user_structures', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->string('name');
-            $table->boolean('is_owner')->default(false);
+            $table->string('user_id');
+            $table->string('structure_id');
             $table->uuid('created_by_id');
             $table->uuid('last_updated_by_id')->nullable();
+            $table->unique(['user_id', 'structure_id']);
 
             $table->timestamps();
             $table->softDeletes();
 
+            $table->foreign('structure_id')->references('id')->on('structures')->cascadeOnDelete();
+            $table->foreign('user_id')->references('id')->on('users')->cascadeOnDelete();
             $table->foreign('created_by_id')->references('id')->on('users')->cascadeOnDelete();
             $table->foreign('last_updated_by_id')->references('id')->on('users')->cascadeOnDelete();
         });
@@ -31,6 +34,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('structures');
+        Schema::dropIfExists('user_structures');
     }
 };
