@@ -8,7 +8,7 @@ use Illuminate\Support\Collection;
 
 class EloquentMenuItemRepository implements MenuItemRepositoryInterface
 {
-    public function getAllWithOverrides(string $structureId): Collection
+    public function getAllWithOverrides(string | null $structureId): Collection
     {
         return MenuItem::with(['overrides' => function ($q) use ($structureId) {
             $q->where('structure_id', $structureId);

@@ -7,5 +7,5 @@ use Illuminate\Support\Collection;
 interface MenuItemRepositoryInterface
 {
     /** @return Collection<MenuItem> */
-    public function getAllWithOverrides(string $structureId): Collection;
+    public function getAllWithOverrides(string | null $structureId): Collection;
 }
