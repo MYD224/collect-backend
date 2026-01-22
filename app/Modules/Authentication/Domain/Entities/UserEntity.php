@@ -14,33 +14,41 @@ class UserEntity
     public function __construct(
         private Id $id,
         private Email $email,
-        private string $fullname,
+        // private string $fullname,
+        private string $firstnames,
+        private string $lastname,
+        private string $gender,
         private ?PhoneNumber $phone,
         private string $hashedPassword,
         private string $status,
+        private ?bool $isSendOtp,
         private ?CarbonImmutable $phoneVerifiedAt = null,
         private ?CarbonImmutable $emailVerifiedAt = null,
         private ?string $authProvider = null,
         private ?string $authProviderId = null,
-        private ?CarbonImmutable $otpExpiresAt = null,
         private CarbonImmutable $createdAt = new CarbonImmutable(),
         private CarbonImmutable $updatedAt = new CarbonImmutable(),
+
     ) {}
 
 
     public static function register(
         Id $id,
-        string $fullname,
+        // string $fullname,
+        string $firstnames,
+        string $lastname,
+        string $gender,
         CarbonImmutable | null $phoneVerifiedAt,
         Email $email,
         string $status,
         string $hashedPassword,
+        ?bool $isSendOtp,
         ?PhoneNumber $phone = null,
         ?CarbonImmutable $emailVerifiedAt = null,
         ?string $authProvider = null,
-        ?string $authProviderId = null
+        ?string $authProviderId = null,
     ): self {
-        return new self($id, $email, $fullname, $phone, $hashedPassword, $status, $phoneVerifiedAt, $emailVerifiedAt, $authProvider, $authProviderId);
+        return new self($id, $email, $firstnames, $lastname, $gender, $phone, $hashedPassword, $status, $isSendOtp, $phoneVerifiedAt, $emailVerifiedAt, $authProvider, $authProviderId);
     }
 
     public function activate(): void
@@ -52,20 +60,35 @@ class UserEntity
 
     public function update(
         ?Email $email = null,
-        ?string $fullname = null,
+        // ?string $fullname = null,
+        ?string $firstnames = null,
+        ?string $lastname = null,
+        ?string $gender = null,
         ?PhoneNumber $phone = null,
         ?string $status = null,
         ?string $hashedPassword = null,
-        ?CarbonImmutable $otpExpiresAt = null,
         ?CarbonImmutable $phoneVerifiedAt = null,
         ?CarbonImmutable $emailVerifiedAt = null,
         ?string $authProvider = null,
         ?string $authProviderId = null,
+        ?bool $isSendOtp = null
 
     ): void {
 
-        if ($fullname !== null) {
-            $this->fullname = $fullname;
+        // if ($fullname !== null) {
+        //     $this->fullname = $fullname;
+        // }
+
+        if ($firstnames !== null) {
+            $this->firstnames = $firstnames;
+        }
+
+        if ($lastname !== null) {
+            $this->lastname = $lastname;
+        }
+
+        if ($gender != null) {
+            $this->gender = $gender;
         }
 
         if ($email !== null) {
@@ -86,10 +109,6 @@ class UserEntity
             $this->hashedPassword = $hashedPassword;
         }
 
-        if ($otpExpiresAt !== null) {
-            $this->otpExpiresAt = $otpExpiresAt;
-        }
-
         if ($phoneVerifiedAt !== null) {
             $this->phoneVerifiedAt = $phoneVerifiedAt;
         }
@@ -101,6 +120,10 @@ class UserEntity
         }
         if ($authProviderId !== null) {
             $this->authProviderId = $authProviderId;
+        }
+
+        if ($isSendOtp !== null) {
+            $this->isSendOtp = $isSendOtp;
         }
 
         $this->touchUpdatedAt();
@@ -144,7 +167,8 @@ class UserEntity
 
     public function getFullname(): string
     {
-        return $this->fullname;
+        return "";
+        // return $this->fullname;
     }
 
     public function getHashedPassword(): string
@@ -152,11 +176,6 @@ class UserEntity
         return $this->hashedPassword;
     }
 
-
-    public function getOtpExpiresAt()
-    {
-        return $this->otpExpiresAt;
-    }
 
     public function getStatus(): string
     {
@@ -215,5 +234,38 @@ class UserEntity
     public function getAuthProviderId(): ?string
     {
         return $this->authProviderId;
+    }
+
+    /**
+     * Get the value of firstnames
+     */
+    public function getFirstnames()
+    {
+        return $this->firstnames;
+    }
+
+
+    /**
+     * Get the value of lastname
+     */
+    public function getLastname()
+    {
+        return $this->lastname;
+    }
+
+    /**
+     * Get the value of gender
+     */
+    public function getGender()
+    {
+        return $this->gender;
+    }
+
+    /**
+     * Get the value of isSendOtp
+     */
+    public function getIsSendOtp()
+    {
+        return $this->isSendOtp;
     }
 }

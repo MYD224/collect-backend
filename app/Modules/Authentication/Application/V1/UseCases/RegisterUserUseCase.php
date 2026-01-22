@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Modules\Authentication\Application\V1\UseCases;
 
 use App\Core\Contracts\Cache\CacheServiceInterface;
@@ -18,7 +19,7 @@ use Illuminate\Support\Facades\Log;
 
 class RegisterUserUseCase
 {
-     public function __construct(
+    public function __construct(
         private readonly UserRepositoryInterface $userRepository,
         private readonly CacheServiceInterface $cacheService,
         private readonly HashingService $hashingService,
@@ -33,23 +34,25 @@ class RegisterUserUseCase
 
         $userEntity = UserEntity::register(
             id: Id::generate(),
-            fullname: $command->fullname,
+            // fullname: $command->fullname,
+            firstnames: $command->firstnames,
+            lastname: $command->lastname,
+            gender: $command->gender,
             phone: $phoneVO,
             phoneVerifiedAt: null,
             email: $emailVO,
-            status: UserStatus::ACTIVE,
+            isSendOtp: true,
+            // status: UserStatus::ACTIVE,
+            status: 'Active',
             hashedPassword: $passwordHashed
-        );     
-
-
-
-        return $this->cacheService->remember(
-            key: "user:".$userEntity->getId().":session",
-            ttl: 3600,
-            callback: fn() => $this->userRepository->save($userEntity)
         );
 
 
 
+        return $this->cacheService->remember(
+            key: "user:" . $userEntity->getId() . ":session",
+            ttl: 3600,
+            callback: fn() => $this->userRepository->save($userEntity)
+        );
     }
 }

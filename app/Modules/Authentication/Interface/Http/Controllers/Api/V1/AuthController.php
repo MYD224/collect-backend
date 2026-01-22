@@ -43,8 +43,13 @@ class AuthController extends BaseController
     public function __construct(private readonly UserRepositoryInterface $userRepository, private readonly HashingService $hashingService) {}
 
 
-    public function login(Request $request, UserRepositoryInterface $userRepository, LoginUser $loginUseCase)
-    {
+    public function login(
+        Request $request,
+        UserRepositoryInterface $userRepository,
+        LoginUser $loginUseCase,
+        GenerateTokenUseCase $generateTokenUseCase,
+        GetNavigationTreeUseCase $getNavigationTreeUseCase
+    ) {
 
         $validator = Validator::make($request->all(), [
             'phone'    => 'required|string',
@@ -73,35 +78,35 @@ class AuthController extends BaseController
         // Revoke old tokens (optional, to ensure one active session)
         $userRepository->deleteTokens($userEntity->getPhoneNumber());
 
-        $isLoggedIn = $loginUseCase->execute($request->phone, $request->password);
+        $loginUseCase->execute($request->phone, $request->password);
 
-        // Generate OTP
-        // // $otp = rand(100000, 999999);
-        // $otp = app(GenerateOtpHandler::class)->handle(
-        //     new GenerateOtpCommand($userEntity->getId(), 30000)
-        // );
-        $otp = app(GenerateOtpUseCase::class)->execute(
-            new GenerateOtpCommand($userEntity->getId(), 30000)
-        );
-        // $user->update([
-        //     "otp_code" => $result['otp'],
-        //     "otp_expires_at" => now()->addMinutes(10)
-        // ]);
-
-        // Store in DB or cache (Redis) with expiration
-        // Cache::put('phone_', $request->phone, now()->addMinutes(5));
-
-        // Send via SMS gateway (or fake for dev)
-        // SmsService::send($request->phone, "Your OTP is: {$otp}");
-        // TODO: send OTP via SMS or WhatsApp (for now just log it)
-        // info("OTP for {$user->phone}: {$otp}");
+        if ($userEntity->getIsSendOtp()) {
+            $otp = app(GenerateOtpUseCase::class)->execute(
+                new GenerateOtpCommand($userEntity->getId(), 30000)
+            );
+            // Send via SMS gateway (or fake for dev)
+            // SmsService::send($request->phone, "Your OTP is: {$otp}");
+            // TODO: send OTP via SMS or WhatsApp (for now just log it)
+            // info("OTP for {$user->phone}: {$otp}");
 
 
-        return response()->json([
-            'message' => 'user verified successfully. Please verify your phone.',
-            'user' => UserData::fromEntity($userEntity),
-            'otp' => $otp,
-        ]);
+            return response()->json([
+                'message' => 'user verified successfully. Please verify your phone.',
+                'user' => UserData::fromEntity($userEntity),
+                'otp' => $otp,
+            ]);
+        } else {
+            $token = $generateTokenUseCase->execute($userEntity->getId()); //
+            //get user permissions and menus
+            $userMenus = $getNavigationTreeUseCase->execute(null, $userEntity->getId());
+
+            return response()->json([
+                'token_type' => 'Bearer',
+                'access_token' => $token,
+                'user' => UserData::fromEntity($userEntity),
+                'user_menus' => $userMenus,
+            ]);
+        }
     }
 
     public function register(
@@ -113,7 +118,10 @@ class AuthController extends BaseController
         try {
 
             $validator = Validator::make($request->all(), [
-                'fullname'     => 'required|string|max:255',
+                // 'fullname'     => 'required|string|max:255',
+                'firstnames'     => 'required|string|max:255',
+                'lastname'     => 'required|string|max:255',
+                'gender' => 'require|string|max:8',
                 'phone'    => 'required|string|max:255|unique:users',
                 'password' => 'required|string|min:6|confirmed',
             ]);
@@ -123,9 +131,12 @@ class AuthController extends BaseController
             }
 
             $command = new RegisterUserCommand(
-                fullname: $request->fullname,
+                // fullname: $request->fullname,
+                firstnames: $request->firstnames,
+                lastname: $request->lastname,
+                gender: $request->gender,
                 phone: $request->phone,
-                email: $request->email ?? 'kalili@gmail.com',
+                email: $request->email ?? null,
                 password: $request->password
             );
 
@@ -204,7 +215,6 @@ class AuthController extends BaseController
                     otp: $validated['otp_code']
                 )
             );
-
             $updateCommande = new UpdateUserProfileCommand(
                 id: $result['user_id'],
                 phoneVerifiedAt: CarbonImmutable::now(),
@@ -212,7 +222,7 @@ class AuthController extends BaseController
 
             $userData = $updateProfileUseCase->execute($updateCommande);
             $token = $generateTokenUseCase->execute($validated['user_id']); //
-            //get user permissions
+            //get user permissions and menus
             $userMenus = $getNavigationTreeUseCase->execute(null, $validated['user_id']);
 
             return response()->json([

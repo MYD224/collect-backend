@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Modules\Authentication\Application\V1\Data;
 
 use App\Modules\Authentication\Domain\Entities\UserEntity;
@@ -8,15 +9,19 @@ use Spatie\LaravelData\Data;
 class UserData extends Data
 {
 
-  
+
 
     public function __construct(
         public string $id,
-        public string $fullname,
+        // public string $fullname,
+        public string $firstnames,
+        public string $lastname,
+        public string $gender,
         public string $phone,
         public string $email,
         public string $status,
         public CarbonImmutable | null $phoneVerifiedAt,
+        public CarbonImmutable | null $emailVerifiedAt,
 
     ) {}
 
@@ -25,13 +30,15 @@ class UserData extends Data
     {
         return new self(
             id: $userEntity->getId(),
-            fullname: $userEntity->getFullname(),
+            // fullname: $userEntity->getFullname(),
+            firstnames: $userEntity->getFirstnames(),
+            lastname: $userEntity->getLastname(),
+            gender: $userEntity->getGender(),
             phone: $userEntity->getPhoneNumber(),
             email: $userEntity->getEmail(),
-            status: $userEntity->getStatus()->value(),
-            phoneVerifiedAt: $userEntity->getPhoneVerifiedAt()
+            status: $userEntity->getStatus(),
+            phoneVerifiedAt: $userEntity->getPhoneVerifiedAt(),
+            emailVerifiedAt: $userEntity->getEmailVerifiedAt()
         );
     }
-
-
 }

@@ -4,6 +4,7 @@ namespace App\Modules\Authentication\Infrastructure\Persistence\Eloquent\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 
+use App\Models\Status;
 use App\Models\Structure;
 use App\Modules\Authentication\Domain\Enums\UserStatus;
 use App\Modules\Authentication\Domain\ValueObjects\Id;
@@ -31,12 +32,11 @@ class User extends Authenticatable
         'gender',
         'email',
         'phone',
-        'role',
-        'status',
+        'status_id',
         'phone_verified_at',
         'email_verified_at',
-        'otp_code',
-        'otp_expires_at',
+        'is_send_otp',
+        'citoyen_id',
         'password',
         'auth_provider',
         'provider_id',
@@ -59,10 +59,9 @@ class User extends Authenticatable
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
-        'otp_expires_at' => 'datetime',
         'password' => 'hashed',
         'id' => 'string',
-        'status' => 'string',
+        'status_id' => 'string',
     ];
 
 
@@ -72,7 +71,7 @@ class User extends Authenticatable
     protected $primaryKey = 'id';
     protected $table = 'users';
 
-
+    protected $guard_name = 'api';
 
     public function findForPassport($username)
     {
@@ -100,5 +99,10 @@ class User extends Authenticatable
     public function structures()
     {
         return $this->belongsToMany(Structure::class, 'user_structures', 'user_id', 'structure_id');
+    }
+
+    public function status()
+    {
+        return $this->belongsTo(Status::class, 'status_id', 'id');
     }
 }

@@ -4,7 +4,6 @@ namespace App\Modules\Navigation\Application\V1\UseCases;
 
 use App\Core\Contracts\Cache\CacheServiceInterface;
 use App\Modules\Authentication\Domain\Repositories\UserRepositoryInterface;
-use App\Modules\Authentication\Infrastructure\Persistence\Eloquent\Models\User;
 use App\Modules\Navigation\Domain\Repositories\MenuItemRepositoryInterface;
 use Illuminate\Support\Facades\App;
 

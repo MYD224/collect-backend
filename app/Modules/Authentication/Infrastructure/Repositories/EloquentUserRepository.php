@@ -2,6 +2,7 @@
 
 namespace App\Modules\Authentication\Infrastructure\Repositories;
 
+use App\Models\Status;
 use App\Modules\Authentication\Domain\Entities\UserEntity;
 use App\Modules\Authentication\Domain\Enums\UserStatus;
 use App\Modules\Authentication\Domain\Repositories\UserRepositoryInterface;
@@ -10,19 +11,26 @@ use App\Modules\Authentication\Domain\ValueObjects\Id;
 use App\Modules\Authentication\Domain\ValueObjects\PhoneNumber;
 use App\Modules\Authentication\Infrastructure\Persistence\Eloquent\Models\User as ModelsUser;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\Log;
 
 class EloquentUserRepository implements UserRepositoryInterface
 {
     public function save(UserEntity $user): UserEntity
     {
+        $status = Status::where('category', 'Utilisateur')->where('code', $user->getStatus())->first();
+        // if(isset($user->getStatus())){
+        // }
         $user = ModelsUser::updateOrCreate(
             ['id' => $user->getId()],
             [
                 'email' => $user->getEmail(),
                 'phone' => $user->getPhoneNumber(),
-                'fullname' => $user->getFullname(),
-                'status' => $user->getStatus(),
-                'otp_expires_at' => $user->getOtpExpiresAt(),
+                // 'fullname' => $user->getFullname(),
+                'firstnames' => $user->getFirstnames(),
+                'lastname' => $user->getLastname(),
+                'gender' => $user->getGender(),
+                'status_id' => $status->id,
+                'is_send_otp' => $user->getIsSendOtp(),
                 'phone_verified_at' => $user->getPhoneVerifiedAt(),
                 'email_verified_at' => $user->getEmailVerifiedAt(),
                 'password' => $user->getHashedPassword(),
@@ -30,6 +38,7 @@ class EloquentUserRepository implements UserRepositoryInterface
                 'provider_id' => $user->getAuthProviderId(),
             ]
         );
+        $user = $user->with('status:id,label,code')->first();
 
         return $this->userInstance($user);
     }
@@ -65,9 +74,9 @@ class EloquentUserRepository implements UserRepositoryInterface
 
     public function findByPhone(string $phone): ?UserEntity
     {
-        $model = ModelsUser::where('phone', $phone)->first();
+        $model = ModelsUser::with('status:id,label,code')->where('phone', $phone)->first();
         if (!$model) return null;
-
+        $model->status;
         return $this->userInstance($model);
     }
 
@@ -107,14 +116,22 @@ class EloquentUserRepository implements UserRepositoryInterface
 
     private function userInstance(ModelsUser $model): UserEntity
     {
-        info('formating user: ' . $model->id . ' with phone : ' . $model->phone);
+        // info('formating user: ' . $model->id . ' with phone : ' . $model->phone);
+        Log::warning("user found {$model}");
+
+        // Log::warning("user2 found {$el}");
+        $status = $model->status?->code;
         $phone = $model->phone ? new PhoneNumber($model->phone) : null;
-        $status = $model->status ?? UserStatus::ACTIVE->value;
+        // $status = $model->status ?? UserStatus::ACTIVE->value;
         $phoneVerifiedAt = $model->phone_verified_at ? CarbonImmutable::parse($model->phone_verified_at) : null;
         return UserEntity::register(
             id: new Id($model->id),
-            fullname: $model->fullname,
+            // fullname: $model->fullname,
+            firstnames: $model->firstnames,
+            lastname: $model->lastname,
+            gender: $model->gender,
             phone: $phone,
+            isSendOtp: $model->is_send_otp,
             phoneVerifiedAt: $phoneVerifiedAt,
             email: new Email($model->email),
             status: $status,

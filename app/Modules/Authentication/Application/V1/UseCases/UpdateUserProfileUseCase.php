@@ -28,35 +28,41 @@ class UpdateUserProfileUseCase
     {
         try {
             $userEntity = $this->cache->remember(
-                key: "user:".$command->id.":session",
+                key: "user:" . $command->id . ":session",
                 ttl: 3600,
                 callback: fn() => $this->userRepository->findById($command->id)
             );
             // $userEntity = $this->userRepository->findById($userEntity->getId());
             if (!$userEntity) throw new UserNotFoundException();
             // return UserData::fromEntity($userEntity);
-            
 
-            // Préparer les nouvelles valeurs
-            $phoneVerifiedAt = CarbonImmutable::parse($command->phoneVerifiedAt);
+            if (!$userEntity->getPhoneVerifiedAt()) {
 
-            $status = $userEntity->getStatus();
+                // Préparer les nouvelles valeurs
+                $phoneVerifiedAt = CarbonImmutable::parse($command->phoneVerifiedAt);
 
-            // Mettre à jour l'utilisateur
-            $userEntity->update(
-                status: $status,
-                phoneVerifiedAt: $phoneVerifiedAt,
-            );
+                $status = $userEntity->getStatus();
 
-            // Persister les modifications
-            $updatedUserEntity = $this->userRepository->save($userEntity);
-            
-            $this->cache->delete("user:".$command->id.":session");
-            $this->cache->set(
-                key: "user:".$command->id.":session",
-                ttl: 3600,
-                value: $updatedUserEntity
-            );
+                // Mettre à jour l'utilisateur
+                $userEntity->update(
+                    // status: $status,
+                    phoneVerifiedAt: $phoneVerifiedAt,
+                );
+
+                // $updatedUserEntity = $userEntity;
+                // Persister les modifications
+                $updatedUserEntity = $this->userRepository->save($userEntity);
+                $this->cache->delete("user:" . $command->id . ":session");
+                $this->cache->set(
+                    key: "user:" . $command->id . ":session",
+                    ttl: 3600,
+                    value: $updatedUserEntity
+                );
+            } else {
+                $updatedUserEntity = $userEntity;
+            }
+
+
             // 5. Emit event
             // event(new UserUpdatedEvent($user));
 
