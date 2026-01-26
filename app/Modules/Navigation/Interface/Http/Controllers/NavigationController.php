@@ -3,12 +3,18 @@
 namespace App\Modules\Navigation\Interface\Http\Controllers;
 
 use App\Core\Contracts\Cache\CacheServiceInterface;
+use App\Core\Interface\Controllers\BaseController;
+use App\Modules\Authentication\Domain\ValueObjects\Id;
+use App\Modules\Navigation\Application\V1\UseCases\AddMenuItemUseCase;
 use App\Modules\Navigation\Application\V1\UseCases\GetNavigationTreeUseCase;
+use App\Modules\Navigation\Domain\Entities\MenuItemEntity;
+use App\Modules\Navigation\Domain\Enums\MenuType;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Validator;
 
 
-class NavigationController
+class NavigationController extends BaseController
 {
     public function __construct(
         private GetNavigationTreeUseCase $useCase,
@@ -37,5 +43,58 @@ class NavigationController
         $user = $request->user();
         $menu = $this->useCase->execute(null, $user->id);
         return response()->json($menu);
+    }
+
+    public function addMenu(Request $request, AddMenuItemUseCase $addMenuItemUseCase)
+    {
+        $validator = Validator::make($request->all(), [
+            'code'          => 'required|string|max:255',
+            'default_label' => 'required|array', // Should be array like {"en": "Label", "fr": "Étiquette"}
+            // 'default_label.en' => 'required|string|max:255',
+            'type'          => 'required|string|in:menu,tab', // Fixed typo: 'require' -> 'required'
+            'order'         => 'required|integer|max:100',
+            'path'          => 'required|string|max:255',
+            'icon'          => 'required|string|max:255',
+            'parent_id'     => 'nullable|string',
+            'module_id'     => 'nullable|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $user = request()->user();
+
+        // Convert string IDs to Id value objects
+        $parentId = $request->parent_id ? new Id($request->parent_id) : null;
+        $moduleId = $request->module_id ? new Id($request->module_id) : null;
+        $userId = new Id($user->id);
+
+        // Create MenuType enum from string
+        $typeVO = MenuType::from($request->type);
+
+        $menu = MenuItemEntity::create(
+            id: Id::generate(),
+            moduleId: $moduleId,
+            parentId: $parentId,
+            code: $request->code,
+            type: $typeVO,
+            routePath: $request->path,
+            icon: $request->icon,
+            defaultLabel: $request->default_label, // Should be array
+            sortOrder: $request->order,
+            createdById: $userId,
+            updatedById: $userId,
+            // children: []
+        );
+
+        // You'll need to persist this to database here
+        // $this->menuRepository->save($menu);
+        $menu = $addMenuItemUseCase->execute($menu);
+
+        return response()->json([
+            'data' => $menu,
+            'message' => 'Menu item created successfully'
+        ], 201);
     }
 }

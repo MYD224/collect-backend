@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\App;
 class GetNavigationTreeUseCase
 {
     public function __construct(
-        private MenuItemRepositoryInterface $repository,
+        private readonly MenuItemRepositoryInterface $repository,
         private readonly UserRepositoryInterface $userRepository,
         private readonly CacheServiceInterface $cache,
     ) {}
