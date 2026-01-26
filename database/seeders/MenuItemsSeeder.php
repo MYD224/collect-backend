@@ -9,7 +9,7 @@ use App\Models\Type;
 use App\Models\UserStructure;
 use App\Modules\Authentication\Domain\ValueObjects\Id;
 use App\Modules\Authentication\Infrastructure\Persistence\Eloquent\Models\User;
-use App\Modules\Navigation\Domain\Entities\MenuItem;
+use App\Modules\Navigation\Infrastructure\Persistence\Eloquent\Models\MenuItem;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
 
