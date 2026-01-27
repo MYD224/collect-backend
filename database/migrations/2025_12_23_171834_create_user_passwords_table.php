@@ -15,7 +15,7 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->uuid('security_policy_id');
             $table->uuid('user_id');
-            $table->string('type'); //a mettre a jour pour prendre un type enum
+            $table->enum('type', ['Auto', 'Perso']);
             $table->string('password', 255);
             $table->date('expired_at');
             $table->uuid('created_by_id');
@@ -27,6 +27,7 @@ return new class extends Migration
 
             $table->fk('created_by_id', 'users')->cascadeOnDelete();
             $table->fk('updated_by_id', 'users')->cascadeOnDelete();
+            $table->fk('security_policy_id', 'security_policies')->cascadeOnDelete();
         });
     }
 

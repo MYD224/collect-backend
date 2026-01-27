@@ -29,4 +29,5 @@ interface UserRepositoryInterface
         ?string $emailValidatedAt = null
     ): UserEntity;
     public function saveConnexion(string $userId, ?string $otp_code): void;
+    public function editPassword(string $userId, string $password): void;
 }

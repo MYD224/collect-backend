@@ -138,6 +138,15 @@ class EloquentUserRepository implements UserRepositoryInterface
         ]);
     }
 
+    public function editPassword(string $userId, string $password): void
+    {
+        $user = ModelsUser::findOrFail($userId);
+        if ($user) {
+            $user->password = $password;
+            $user->save();
+        }
+    }
+
     private function userInstance(ModelsUser $model): UserEntity
     {
         $status = $model->status?->code;

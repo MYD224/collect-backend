@@ -6,8 +6,7 @@ use App\Modules\Navigation\Application\V1\UseCases\GetNavigationTreeUseCase;
 use App\Core\Application\UseCases\GenerateTokenUseCase;
 use App\Core\Interface\Controllers\BaseController;
 use App\Modules\Authentication\Application\Services\HashingService;
-// use App\Modules\Authentication\Application\Services\UserService;
-use App\Modules\Authentication\Application\Services\UserService;
+use App\Modules\Authentication\Application\V1\Commands\EditPasswordCommand;
 use App\Modules\Authentication\Application\V1\Commands\GenerateOtpCommand;
 use App\Modules\Authentication\Application\V1\Commands\LogoutCommand;
 use App\Modules\Authentication\Application\V1\Commands\RegisterUserCommand;
@@ -15,6 +14,7 @@ use App\Modules\Authentication\Application\V1\Commands\UpdateUserProfileCommand;
 use App\Modules\Authentication\Application\V1\Commands\VerifyOtpCommand;
 use App\Modules\Authentication\Application\V1\Data\UserData;
 use App\Modules\Authentication\Application\V1\Handlers\GenerateOtpHandler;
+use App\Modules\Authentication\Application\V1\UseCases\EditPasswordUseCase;
 use App\Modules\Authentication\Application\V1\UseCases\GenerateOtpUseCase;
 use App\Modules\Authentication\Application\V1\UseCases\LogoutUseCase;
 use App\Modules\Authentication\Application\V1\UseCases\RegisterUserUseCase;
@@ -31,6 +31,8 @@ use Laravel\Socialite\Facades\Socialite;
 use App\Modules\Authentication\Domain\ValueObjects\Email;
 use App\Modules\Authentication\Domain\ValueObjects\Id;
 use App\Modules\Authentication\Domain\ValueObjects\PhoneNumber;
+use App\Modules\Authentication\Domain\Exceptions\InvalidPasswordException;
+use App\Modules\User\Domain\Exceptions\UserNotFoundException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redis;
@@ -242,6 +244,89 @@ class AuthController extends BaseController
             ]);
         } catch (\Throwable $th) {
             return response()->json(["message" => $th->getMessage()], 400);
+        }
+    }
+
+    public function resetPassword(
+        Request $request,
+        UserRepositoryInterface $userRepository,
+        GenerateOtpUseCase $otpUseCase
+    ) {
+        $validator = Validator::make($request->all(), [
+            'phone'    => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $userEntity = $userRepository->findByPhone($request->phone);
+
+        if (!$userEntity) {
+            return response()->json(['message' => 'User not found.'], 404);
+        }
+
+        $otp = $otpUseCase->execute(new GenerateOtpCommand($userEntity->getId()));
+
+        return response()->json([
+            'user_id' => $userEntity->getId(),
+            'otp_expires_at' => $otp['expires_at']
+        ]);
+    }
+
+    public function verifyOtp(Request $request, VerifyOtpUseCase $verifyOtpUseCase)
+    {
+        $validator = Validator::make($request->all(), [
+            'user_id' => 'required|string',
+            'otp_code'    => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $result = $verifyOtpUseCase->execute(new VerifyOtpCommand($request->user_id, $request->otp_code));
+
+        return response()->json([
+            'message' => $result['message'],
+            'user_id' => $result['user_id']
+        ]);
+    }
+
+    public function editPassword(Request $request, EditPasswordUseCase $useCase)
+    {
+        $validator = Validator::make($request->all(), [
+            'user_id' => 'required|string',
+            'password' => 'required|string|min:6|confirmed'
+        ]);
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        try {
+            $command = new EditPasswordCommand(
+                userId: $request->input('user_id'),
+                password: $request->input('password'),
+                oldPassword: $request->input('old_password'),
+            );
+
+            $useCase->execute($command);
+
+            return response()->json([
+                'message' => 'Password updated successfully',
+            ], 200);
+        } catch (UserNotFoundException $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], 404);
+        } catch (InvalidPasswordException $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'An error occurred while updating password',
+            ], 500);
         }
     }
 

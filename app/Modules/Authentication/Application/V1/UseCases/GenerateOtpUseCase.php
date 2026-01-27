@@ -11,6 +11,7 @@ use App\Modules\Authentication\Domain\Repositories\UserRepositoryInterface;
 use App\Modules\User\Domain\Exceptions\UserNotFoundException;
 use DateTimeImmutable;
 use DateTimeZone;
+use Illuminate\Support\Facades\Mail;
 
 use function Symfony\Component\Clock\now;
 
@@ -47,7 +48,17 @@ class GenerateOtpUseCase
         //     userId: $user->id,
         //     otp: (string) $otp
         // ));
-
+        if ($user->getEmail()) {
+            try {
+                Mail::raw('Your generated OTP is:' . $otp . ". it expires at " . $expiresAt?->format(DATE_ATOM), fn($m) => $m->to('myaya.diallo@global-itech.com')->subject('Test Mailpit'));
+            } catch (\Throwable $e) {
+                logger()->error('OTP mail failed', [
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        } else {
+            //send SMS
+        }
         // 4. Return result to controller or API
         return [
             'status' => 'success',

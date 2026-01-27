@@ -19,14 +19,10 @@ return new class extends Migration
             $table->fk('updated_by_id', 'users')->cascadeOnDelete();
         });
 
-        // Schema::table('user_statuses', function (Blueprint $table) {
-
-        //     $table->uuid('created_by_id')->nullable();
-        //     $table->uuid('updated_by_id')->nullable();
-
-        //     $table->foreign('created_by_id')->references('id')->on('users')->cascadeOnDelete();
-        //     $table->foreign('updated_by_id')->references('id')->on('users')->cascadeOnDelete();
-        // });
+        Schema::table('security_policies', function (Blueprint $table) {
+            $table->uuid('organization_id');
+            $table->fk('organization_id', 'structures')->cascadeOnDelete();
+        });
     }
 
     /**
@@ -34,8 +30,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('user_statuses', function (Blueprint $table) {
-            $table->dropColumn(['locality_id', 'language_id', 'created_by_id', 'updated_by_id']);
+        Schema::table('security_policies', function (Blueprint $table) {
+            $table->dropColumn(['organization_id']);
         });
 
         Schema::table('users', function (Blueprint $table) {

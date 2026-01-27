@@ -14,7 +14,6 @@ return new class extends Migration
         Schema::create('security_policies', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuid('policy_id');
-            $table->uuid('organization_id');
             $table->string('value', 45);
             $table->date('started_at');
             $table->date('ended_at');
@@ -28,6 +27,7 @@ return new class extends Migration
 
             $table->fk('created_by_id', 'users')->cascadeOnDelete();
             $table->fk('updated_by_id', 'users')->cascadeOnDelete();
+            $table->fk('policy_id', 'policies')->cascadeOnDelete();
         });
     }
 

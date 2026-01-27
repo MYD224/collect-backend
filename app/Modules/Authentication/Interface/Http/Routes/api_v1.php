@@ -2,7 +2,6 @@
 
 use App\Modules\Authentication\Interface\Http\Controllers\Api\V1\AuthController;
 use Illuminate\Support\Facades\Route;
-use App\Modules\Post\Interface\Http\Controllers\Api\V1\PostController;
 
 
 
@@ -11,12 +10,13 @@ Route::prefix('v1')->group(function () {
 
     Route::post("register", [AuthController::class, 'register']);
     Route::post('login', [AuthController::class, 'login']);
-
+    Route::post('verify-phone', [AuthController::class, 'verifyPhone']);
+    Route::post('forgot-password', [AuthController::class, 'resetPassword']);
+    Route::post('verify-otp', [AuthController::class, 'verifyOtp']);
+    Route::patch('edit-password', [AuthController::class, 'editPassword']);
 
     Route::middleware(['auth:api'])->group(function () {
         Route::get('/me', [AuthController::class, 'me']);
         Route::post('/logout', [AuthController::class, 'logout']);
     });
-
-    Route::post('/verify-phone', [AuthController::class, 'verifyPhone']);
 });

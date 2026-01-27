@@ -16,7 +16,7 @@ class OtpService implements OtpServiceInterface
 
     public function __construct(
         private CacheServiceInterface $cacheService,
-    ){ }
+    ) {}
 
 
 
@@ -29,7 +29,7 @@ class OtpService implements OtpServiceInterface
             $otp,
             $ttl
         );
-       
+
         return $otp;
     }
 
@@ -43,18 +43,19 @@ class OtpService implements OtpServiceInterface
 
         // Extract the actual code string from the value object
         $storedCode = $stored->value();
-        
+
         // Use timing-safe comparison
         if (!hash_equals($storedCode, $code)) {
-  
+
             // Track failed attempts (implement rate limiting)
             $this->incrementFailedAttempts($key);
-            
+
             return false;
         }
 
         // One-time OTP → consume it
         $this->cacheService->delete($key);
+        $this->cacheService->delete("otp_attempts:{$key}");
         return true;
     }
 
@@ -62,12 +63,12 @@ class OtpService implements OtpServiceInterface
     {
         $attemptsKey = "otp_attempts:{$key}";
         $attempts = (int) $this->cacheService->get($attemptsKey, 0);
-        
-        if ($attempts >= 5) { // Max 5 attempts
+
+        if ($attempts >= 3) { // Max 3 attempts
             $this->cacheService->delete($key); // Invalidate OTP
-            throw new TooManyAttemptsException();
+            throw new TooManyAttemptsException("You have reached the max attempt!");
         }
-        
+
         $this->cacheService->set($attemptsKey, $attempts + 1, 900); // 15 min TTL
     }
 
