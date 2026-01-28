@@ -25,6 +25,7 @@ class UsersSeeder extends Seeder
                 'email' => 'system@collect.local',
                 'firstnames' => 'System',
                 'lastname' => 'User',
+                'gender' => 'Masculin',
                 'phone' => '000000000',
                 'password' => Str::random(32)
             ],
@@ -33,6 +34,7 @@ class UsersSeeder extends Seeder
                 'email' => 'admin@collect.local',
                 'firstnames' => 'Admin Technique',
                 'lastname' => 'Global',
+                'gender' => 'Masculin',
                 'phone' => '620687185',
                 'password' => 'pass@1234'
             ]
@@ -53,6 +55,7 @@ class UsersSeeder extends Seeder
                     'lastname' => $user['lastname'],
                     'phone' => $phone,
                     'email' => $email,
+                    'gender' => $user['gender'],
                     'phone_verified_at' => now(),
                     'email_verified_at' => null,
                     'status_id' => $status?->id,
