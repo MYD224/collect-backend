@@ -40,7 +40,7 @@ class EloquentUserRepository implements UserRepositoryInterface
                 'provider_id' => $user->getAuthProviderId(),
             ]
         );
-        $user = $user->with('status:id,label,code')->first();
+        $user = $user->with('status:id,label,code')->whereId($user->id)->first();
 
         return $this->userInstance($user);
     }

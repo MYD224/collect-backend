@@ -13,5 +13,6 @@ class RegisterUserCommand
         public string $email,
         public string $phone,
         public string $password,
+        public ?bool $isSendOtp
     ) {}
 }

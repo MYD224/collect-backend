@@ -41,9 +41,9 @@ class RegisterUserUseCase
             phone: $phoneVO,
             phoneVerifiedAt: null,
             email: $emailVO,
-            isSendOtp: true,
+            isSendOtp: $command->isSendOtp ?? true,
             // status: UserStatus::ACTIVE,
-            status: 'Active',
+            status: 'active',
             hashedPassword: $passwordHashed
         );
 

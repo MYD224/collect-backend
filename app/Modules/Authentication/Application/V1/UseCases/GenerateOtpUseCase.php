@@ -50,7 +50,8 @@ class GenerateOtpUseCase
         // ));
         if ($user->getEmail()) {
             try {
-                Mail::raw('Your generated OTP is:' . $otp . ". it expires at " . $expiresAt?->format(DATE_ATOM), fn($m) => $m->to('myaya.diallo@global-itech.com')->subject('Test Mailpit'));
+                Mail::raw('Your generated OTP is:' . $otp . ". it expires at " . $expiresAt?->format(DATE_ATOM), fn($m) => $m->to($user->getEmail())
+                    ->subject('Test Mailpit'));
             } catch (\Throwable $e) {
                 logger()->error('OTP mail failed', [
                     'error' => $e->getMessage(),

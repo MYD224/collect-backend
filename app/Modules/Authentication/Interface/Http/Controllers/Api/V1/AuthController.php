@@ -126,19 +126,17 @@ class AuthController extends BaseController
 
 
         try {
-
             $validator = Validator::make($request->all(), [
-                // 'fullname'     => 'required|string|max:255',
-                'firstnames'     => 'required|string|max:255',
-                'lastname'     => 'required|string|max:255',
-                'gender' => 'require|string|max:8',
-                'phone'    => 'required|string|max:255|unique:users',
+                'firstnames' => 'required|string|max:255',
+                'lastname' => 'required|string|max:255',
+                'gender' => 'required|string|max:8',
+                'phone' => 'required|string|max:16|unique:users',
                 'password' => 'required|string|min:6|confirmed',
             ]);
-
             if ($validator->fails()) {
                 return response()->json(['errors' => $validator->errors()], 422);
             }
+
 
             $command = new RegisterUserCommand(
                 // fullname: $request->fullname,
@@ -147,24 +145,24 @@ class AuthController extends BaseController
                 gender: $request->gender,
                 phone: $request->phone,
                 email: $request->email ?? null,
-                password: $request->password
+                password: $request->password,
+                isSendOtp: $request->is_send_otp ?? true
             );
 
 
             $userEntity = $registerUserUseCase->execute($command);
+            if ($userEntity->getIsSendOtp()) {
 
-            // Generate OTP
-            $otp = app(GenerateOtpUseCase::class)->execute(
-                new GenerateOtpCommand($userEntity->getId(), 30000)
-            );
+                // Generate OTP
+                $otp = app(GenerateOtpUseCase::class)->execute(
+                    new GenerateOtpCommand($userEntity->getId(), 30000)
+                );
 
-
-
-
-            // Send via SMS gateway (or fake for dev)
-            // SmsService::send($request->phone, "Your OTP is: {$otp}");
-            // TODO: send OTP via SMS or WhatsApp (for now just log it)
-            info("OTP for {$userEntity->getPhone()}: {$otp['otp']}");
+                // Send via SMS gateway (or fake for dev)
+                // SmsService::send($request->phone, "Your OTP is: {$otp}");
+                // TODO: send OTP via SMS or WhatsApp (for now just log it)
+                info("OTP for {$userEntity->getPhone()}: {$otp['otp']}");
+            }
 
 
 
