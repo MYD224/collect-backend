@@ -40,6 +40,7 @@ class RegisterUserUseCase
             gender: $command->gender,
             phone: $phoneVO,
             phoneVerifiedAt: null,
+            emailVerifiedAt: null,
             email: $emailVO,
             isSendOtp: $command->isSendOtp ?? true,
             status: UserStatus::ACTIVE,

@@ -2,6 +2,7 @@
 
 namespace App\Modules\Authentication\Infrastructure\Repositories;
 
+use App\Models\Role;
 use App\Models\Status;
 use App\Modules\Authentication\Domain\Entities\UserEntity;
 use App\Modules\Authentication\Domain\Enums\UserStatus;
@@ -144,6 +145,18 @@ class EloquentUserRepository implements UserRepositoryInterface
         if ($user) {
             $user->password = $password;
             $user->save();
+        }
+    }
+
+    public function assignRolesToUser(string $userId, array $roles): void
+    {
+        $user = ModelsUser::findOrFail($userId);
+
+        foreach ($roles as $role) {
+            $roleElement = Role::find($role);
+            if ($roleElement) {
+                $user->assignRole($roleElement);
+            }
         }
     }
 

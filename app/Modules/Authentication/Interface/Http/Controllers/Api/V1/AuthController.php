@@ -6,6 +6,7 @@ use App\Modules\Navigation\Application\V1\UseCases\GetNavigationTreeUseCase;
 use App\Core\Application\UseCases\GenerateTokenUseCase;
 use App\Core\Interface\Controllers\BaseController;
 use App\Modules\Authentication\Application\Services\HashingService;
+use App\Modules\Authentication\Application\V1\Commands\AssignRoleToUserCommand;
 use App\Modules\Authentication\Application\V1\Commands\EditPasswordCommand;
 use App\Modules\Authentication\Application\V1\Commands\GenerateOtpCommand;
 use App\Modules\Authentication\Application\V1\Commands\LogoutCommand;
@@ -14,6 +15,7 @@ use App\Modules\Authentication\Application\V1\Commands\UpdateUserProfileCommand;
 use App\Modules\Authentication\Application\V1\Commands\VerifyOtpCommand;
 use App\Modules\Authentication\Application\V1\Data\UserData;
 use App\Modules\Authentication\Application\V1\Handlers\GenerateOtpHandler;
+use App\Modules\Authentication\Application\V1\UseCases\AssignRolesToUserUseCase;
 use App\Modules\Authentication\Application\V1\UseCases\EditPasswordUseCase;
 use App\Modules\Authentication\Application\V1\UseCases\GenerateOtpUseCase;
 use App\Modules\Authentication\Application\V1\UseCases\LogoutUseCase;
@@ -54,7 +56,9 @@ class AuthController extends BaseController
     ) {
 
         $validator = Validator::make($request->all(), [
-            'phone'    => 'required|string',
+            'phone'    => 'required|string|max:16',
+            'password' => 'required|string|min:6',
+
         ]);
 
         if ($validator->fails()) {
@@ -501,5 +505,38 @@ class AuthController extends BaseController
         if (!in_array($provider, ['google', 'facebook'])) {
             abort(404);
         }
+    }
+
+
+    public function assignRoleToUser(Request $request, AssignRolesToUserUseCase $useCase)
+    {
+
+        $validator = Validator::make($request->all(), [
+            'user_id' => 'required|string|max:40',
+            'roles' => 'required|array' // roles to attach to the user
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+        try {
+            $useCase->execute(new AssignRoleToUserCommand(
+                userId: $request->user_id,
+                roles: $request->roles
+            ));
+        } catch (UserNotFoundException $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'An error occurred while roles to user',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+
+        return response()->json([
+            'message' => "Role(s) assigned successfully!",
+        ]);
     }
 }
